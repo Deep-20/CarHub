@@ -6,6 +6,10 @@ import MAKE_FIELD from '@salesforce/schema/Car__c.Make__c';
 
 const CATEGORY_ERROR = 'Error Loading Category';
 const MAKE_ERROR = 'Error Loading Make Types';
+
+//Lightning Message Service and Message Channel
+import {publish, MessageContext} from 'lightning/messageService'
+import CARS_FILTERED_MESSAGE from '@salesforce/messageChannel/CarsFiltered__c'
 export default class CarFilter extends LightningElement {
     filters={
         searchKey:'',
@@ -14,6 +18,10 @@ export default class CarFilter extends LightningElement {
 
     categoryError = CATEGORY_ERROR;
     makeError = MAKE_ERROR;
+    timer
+
+    @wire(MessageContext)
+    messageContext
 
     @wire(getObjectInfo, {objectApiName: CAR_OBJECT})
     carObjectInfo
@@ -30,14 +38,37 @@ export default class CarFilter extends LightningElement {
 
     handleSearchKeyChange(event){
         this.filters = {...this.filters, "searchKey":event.target.value};
+        this.sendDataToCarList()
     }
 
     handleMaxPriceChange(event){
         this.filters = {...this.filters, "maxPrice":event.target.value};
+        this.sendDataToCarList()
     }
 
     handleCheckbox(event){
+        if(!this.filters.categories){
+            const categories = this.categories.data.values.map(item=>item.value);
+            const makeType = this.makeType.data.values.map(item=>item.value);
+            this.filters = {...this.filters, categories: categories, makeType:makeType}
+        }
         const {name, value} = event.target.dataset;
+        if(event.target.checked){
+            if(!this.filters[name].includes(value)){
+                this.filters[name] = [...this.filters[name], value]
+            }
+        }else{
+            this.filters[name] = this.filters[name].filter(item=> item !== value)
+        }
+        this.sendDataToCarList()
+    }
 
+    sendDataToCarList(){
+        window.clearTimeout(this.timer);
+        this.timer = window.setTimeout(() => {
+            publish(this.messageContext, CARS_FILTERED_MESSAGE, {
+                filters: this.filters
+            });
+        }, 400)
     }
 }
