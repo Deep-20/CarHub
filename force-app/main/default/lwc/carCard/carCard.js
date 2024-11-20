@@ -1,4 +1,7 @@
 import { LightningElement, wire } from 'lwc';
+import {NavigationMixin} from 'lightning/navigation'
+
+import CAR_OBJECT from '@salesforce/schema/Car__c'
 import NAME_FIELD from '@salesforce/schema/Car__c.Name'
 import PICTURE_URL_FIELD from '@salesforce/schema/Car__c.Picture_Url__c';
 import CATEGORY_FIELD from '@salesforce/schema/Car__c.Category__c';
@@ -11,7 +14,7 @@ import CONTROL_FIELD from '@salesforce/schema/Car__c.Control__c';
 import { getFieldValue} from 'lightning/uiRecordApi';
 import CAR_SELECTED_MESSAGE from '@salesforce/messageChannel/CarSelected__c'
 import { unsubscribe, subscribe, MessageContext } from 'lightning/messageService';
-export default class CarCard extends LightningElement {
+export default class CarCard extends NavigationMixin(LightningElement) {
 
     //Load context for wire
     @wire(MessageContext)
@@ -52,5 +55,16 @@ export default class CarCard extends LightningElement {
     disconnectedCallback(){
         unsubscribe(this.carSelectionSubscription)
         this.carSelectionSubscription = null;
+    }
+
+    handleNavigateToRecord(){
+        this[NavigationMixin.Navigate]({
+            type:'standard__recordPage',
+            attributes:{
+                recordId:this.recordId,
+                objectApiName:CAR_OBJECT.objectApiName,
+                actionName:'view'
+            },
+        })
     }
 }
